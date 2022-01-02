@@ -133,9 +133,9 @@ real_params = opt.real_params_path
 realparams = np.load(open(real_params, 'rb'))
 realparams = realparams['face']
 
-idparams = realparams[0,71:151]
-texparams = realparams[0,151:231]
-gammaparams = realparams[0,231:]
+idparams = realparams[0,71:151]   # 80
+texparams = realparams[0,151:231] # 80
+gammaparams = realparams[0,231:] # 27
 
 
 

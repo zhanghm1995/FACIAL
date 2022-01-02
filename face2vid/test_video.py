@@ -14,7 +14,6 @@ from cv2 import VideoWriter,VideoWriter_fourcc,imread,resize
 import os
 import glob
 from os.path import join, exists, abspath, dirname
-import ffmpeg
 
 
 opt = TestOptions().parse(save=False)
@@ -50,21 +49,17 @@ for i, data in enumerate(dataset):
     imsave(img_root+'/{:06d}.jpg'.format(frameindex), util.tensor2im(prev_frame))
 
 
-
-
+## From images to generate Video
 fps = 30
-
-fourcc=VideoWriter_fourcc('M','J','P','G')
+fourcc = VideoWriter_fourcc('M','J','P','G')
 videoWriter = cv2.VideoWriter(img_root+'/test_1.avi',fourcc,fps,(512,512))
-im_names=os.listdir(img_root)
+im_names = os.listdir(img_root)
 im_names = sorted(glob.glob(join(img_root, '*[0-9]*.jpg')))
 
 for im_name in range(len(im_names)):
     frame=cv2.imread(im_names[im_name])
-
-
     frame = cv2.resize(frame, (512,512)) 
-    print (im_name)
+    print(im_name)
     videoWriter.write(frame)
-print(videoWriter)
 videoWriter.release()
+print("Done")

@@ -20,7 +20,7 @@ parser.add_argument('--outpath', type=str, default = '../examples/rendering/')
 
 opt = parser.parse_args()
 
-def Compute_norm(face_shape,facemodel):
+def Compute_norm(face_shape, facemodel):
 
 	face_id = facemodel.tri # vertex index for each triangle face, with shape [F,3], F is number of faces
 	point_id = facemodel.point_buf # adjacent face index for each vertex, with shape [N,8], N is number of vertex
@@ -39,8 +39,7 @@ def Compute_norm(face_shape,facemodel):
 
 	return v_norm
 
-def Illumination_layer(face_texture,norm,gamma):
-
+def Illumination_layer(face_texture, norm, gamma):
 	num_vertex = np.shape(face_texture)[1]
 
 	init_lit = np.array([0.8,0,0,0,0,0,0,0,0])
@@ -83,24 +82,23 @@ def render(facemodel, chi):
     fitted_s = chi[3] 
     fitted_t = chi[4:7].copy()
     fitted_t[2] = 1.0
-    fitted_ep = np.expand_dims(chi[7:71],1)
-    fitted_sp = np.expand_dims(facemodel.sp,1)
-    tex_coeff = np.expand_dims(facemodel.tex,1)
+    fitted_ep = np.expand_dims(chi[7:71], 1)
+    fitted_sp = np.expand_dims(facemodel.sp, 1)
+    tex_coeff = np.expand_dims(facemodel.tex, 1)
     expression1 = facemodel.exBase.dot(fitted_ep)
 	
-    gamma = np.expand_dims(facemodel.gamma,0)
-	
+    gamma = np.expand_dims(facemodel.gamma, 0)
 
     vertices = facemodel.meanshape.T + facemodel.idBase.dot(fitted_sp) + expression1
     vertices = np.reshape(vertices, [int(3), int(len(vertices)/3)], 'F').T
 
     face_norm = Compute_norm(np.expand_dims(vertices,0),facemodel)
-    face_norm_r = np.matmul(face_norm,np.expand_dims(fitted_R,0))
+    face_norm_r = np.matmul(face_norm,np.expand_dims(fitted_R, 0))
 
     colors = facemodel.meantex.T + facemodel.texBase.dot(tex_coeff)
     colors = np.reshape(colors, [int(3), int(len(colors)/3)], 'F').T
 
-    face_color,lighting = Illumination_layer(np.expand_dims(colors, 0), face_norm_r, gamma)
+    face_color, lighting = Illumination_layer(np.expand_dims(colors, 0), face_norm_r, gamma)
     colors = face_color[0,:]
     colors = np.minimum(np.maximum(colors, 0), 255)
     transformed_vertices = mesh.transform.similarity_transform(vertices, fitted_s, fitted_R, fitted_t)
@@ -143,10 +141,10 @@ net_params = opt.net_params_path
 netparams = np.load(open(net_params, 'rb'))
 netparams = netparams['face']
 std2 = np.std(netparams, axis=0)
-mean2 = np.mean(netparams,axis=0)
+mean2 = np.mean(netparams, axis=0)
 
 for i in range(6):
-	netparams[:,i] = netparams[:,i]*std1[i]+mean1[i]
+	netparams[:,i] = netparams[:,i]*std1[i] + mean1[i]
 
 
 from scipy.signal import savgol_filter
@@ -182,11 +180,11 @@ save_folder = opt.outpath + examplename
 if not os.path.exists(save_folder):
 	os.makedirs(save_folder)
 
-for i in range(1,netparams.shape[0]+1):
+for i in range(1, netparams.shape[0] + 1):
 	print(i)
-	chi_next = netparams[i-1,:].copy() 
+	chi_next = netparams[i-1, :].copy() 
 	if i>3 and i<netparams.shape[0]-2:
 		for j in range(6):
 			chi_next[j] = np.sum([netparams[i-3,j], netparams[i-2,j], netparams[i-1,j], netparams[i,j], netparams[i+1,j]]*gaosifilter)
-	image = render(facemodel,chi_next).astype(np.uint8)
+	image = render(facemodel, chi_next).astype(np.uint8)
 	io.imsave(os.path.join(save_folder,str("%06d"%(i))+'.jpg'), image)

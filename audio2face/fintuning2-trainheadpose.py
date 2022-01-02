@@ -27,7 +27,7 @@ cvs_paths = []
 cvs_paths.append(opt.cvspath)
 
 batchsz = 16
-epochs = 11
+epochs = 110
 
 device = torch.device('cuda')
 torch.manual_seed(1234)

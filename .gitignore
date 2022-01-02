@@ -9,6 +9,8 @@ examples/test_result/
 face2vid/checkpoints/train3
 face2vid/models/spynet_models/
 .ipynb_checkpoints/
+video_preprocess/
+face2vid/datasets/
 # gen files
 test/*/obj/
 test/*/libs/

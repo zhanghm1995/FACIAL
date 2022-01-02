@@ -40,7 +40,7 @@ def process_audio(ds_path, audio, fps):
 
 fps = 30                                                                        #frame rate, same, do not need change
 dataset_path = '../examples/'                         # The root of my audios, inside is cliton, obama....
-subjects = ['audio']     # names
+subjects = ['audio_train']     # names
 # audio_list = glob.glob(os.path.join(dataset_path, '*/audio/*.wav'))
 ds_fname = 'ds_graph/output_graph.pb'  # deep speech model
 
@@ -54,6 +54,7 @@ for subject in subjects:
         sentence = audio_fname.split('/')[-1][0:-4]                             # get wav name
 
         sample_rate, audio = wavfile.read(audio_fname)                          # read wav file
+        print(f"Audio Info: file:{audio_fname} sr:{sample_rate} audio:{audio.shape}")
         tmp_audio[sentence] = {'audio':audio, 'sample_rate': sample_rate}
     audio4deepspeech[subject] = tmp_audio                                       # save format names(obama), video(0-ZCDAUSH)
 
