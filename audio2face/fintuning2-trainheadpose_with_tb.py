@@ -13,8 +13,10 @@ import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 
 parser = argparse.ArgumentParser(description='Train_setting')
-parser.add_argument('--audiopath', type=str, default='/content/FACIAL/examples/audio_preprocessed/train1.pkl')
-parser.add_argument('--npzpath', type=str, default='/content/FACIAL/video_preprocess/train1_posenew.npz')
+parser.add_argument('--audiopath', type=str, default='/content/FACIAL/examples/audio_preprocessed/train1.pkl') # DeepSpeech features
+parser.add_argument('--npzpath', type=str, default='/content/FACIAL/video_preprocess/train1_posenew.npz') # GT Deep3DFace params
+parser.add_argument('--eval_audiopath', type=str, default=None)
+parser.add_argument('--eval_npzpath', type=str, default=None)
 parser.add_argument('--cvspath', type=str, default = '/content/FACIAL/video_preprocess/train1_openface/train1_512_audio.csv')
 parser.add_argument('--pretainpath_gen', type=str, default = '/content/FACIAL/audio2face/checkpoint/obama/Gen-20-0.0006273046686902202.mdl')
 parser.add_argument('--savepath', type=str, default = './checkpoint/train1')
@@ -44,6 +46,16 @@ train_loader = DataLoader(training_set,
                           drop_last=True,
                           pin_memory=True)
 print(f"Training data length: {len(training_set)} / {len(train_loader)}...")
+
+if opt.eval_npzpath is not None:
+    val_dataset = Facial_Dataset(opt.eval_audiopath, opt.eval_npzpath, cvs_paths=None)
+    val_dataset_loader = DataLoader(val_dataset,
+                                    batch_size=batchsz,
+                                    shuffle=False,
+                                    drop_last=True,
+                                    pin_memory=True)
+    print(f"Training data length: {len(val_dataset)} / {len(val_dataset_loader)}...")
+
 
 def set_requires_grad(nets, requires_grad=False):
     if not isinstance(nets, list):
@@ -163,6 +175,13 @@ def main():
                 print('epoch: ',epoch,' loss_s: ',loss_s.item(),' lossg_e: ',lossg_e.item(), ' lossg_em: ',lossg_em.item())
                 print(' loss_au: ',loss_au.item(),' loss_aum: ',loss_aum.item()) 
                 print(' loss_pose: ',loss_pose.item(),' loss_posem: ',loss_posem.item()) 
+
+        if opt.eval_npzpath is not None:
+            ## ----------Start eval--------------------
+            print(f"================Start eval...======================")
+            eval_loss = eval_model(modelgen, val_dataset_loader, criteon1, criteon)
+            tb_writer.add_scalar("eval/lossG", eval_loss, global_step)
+
 
 
 if __name__ == '__main__':

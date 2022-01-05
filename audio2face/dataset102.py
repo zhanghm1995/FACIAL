@@ -9,10 +9,18 @@ import torch
 from torch.utils.data import Dataset
 
 class Facial_Dataset(Dataset):
-    def __init__(self, audio_paths, npz_paths, cvs_paths):
+    def __init__(self, audio_paths, npz_paths, cvs_paths=None):
+        """[summary]
+
+        Args:
+            audio_paths ([list]): Audio feature pickle file path list
+            npz_paths (list): Face 3D parameters npz file path list
+            cvs_paths (list, optional): Face 3D Head pose csv file path list. Defaults to None.
+        """
         self.audio_path_list = audio_paths
         self.mesh_param_path_list = npz_paths
-        self.blink_path_list = cvs_paths 
+        self.blink_path_list = cvs_paths if cvs_paths is not None else [None] * len(npz_paths)
+
         self.frames = 128
 
         self.dataset_audio = []
@@ -32,21 +40,24 @@ class Facial_Dataset(Dataset):
             params = np.load(open(param_path, 'rb'))
             params = params['face']
 
-            blinkinfo = pd.read_csv(blink_path)
-            aublink = blinkinfo['AU45_r'].values
+            if blink_path is not None:
+                blinkinfo = pd.read_csv(blink_path)
+                aublink = blinkinfo['AU45_r'].values
+                print(aublink.shape)
+            else:
+                aublink = np.zeros((audio.shape[0],))
 
             std1 = np.std(params, axis=0)
             mean1 = np.mean(params,axis=0)
 
             for i in range(6):
-                params[:,i] = (params[:,i]-mean1[i])/std1[i]
-            
+                params[:,i] = (params[:,i] - mean1[i]) / std1[i]
             
             min_num_frame = min(params.shape[0], audio.shape[0])
 
             if params.shape[0] != audio.shape[0]:
-                params=params[0:min_num_frame,:]
-                audio=audio[0:min_num_frame,:,:]
+                params = params[0:min_num_frame,:]
+                audio = audio[0:min_num_frame,:,:]
                 aublink = aublink[0:min_num_frame]
 
             aublink = aublink[:, np.newaxis]
