@@ -24,6 +24,7 @@ def debug_audio2face_results():
 
 def debug_face_template():
     face_template_path = "../video_preprocess/train1_posenew.npz"
+    # face_template_path = "../gangqiang_video_preprocess/gangqiang_posenew.npz"
 
     face_template = np.load(open(face_template_path, 'rb'))
     face_template = face_template['face']
