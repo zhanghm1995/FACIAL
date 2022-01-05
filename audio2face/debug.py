@@ -30,24 +30,25 @@ def debug_face_template():
     face_template = face_template['face']
 
     print(type(face_template), face_template.shape)
-
     print(np.min(face_template), np.max(face_template))
 
-    std1 = np.std(face_template, axis=0)
-    mean1 = np.mean(face_template, axis=0)
+    print(np.min(face_template[:, -187:]), np.max(face_template[:, -187:]))
 
-    print(std1.shape, mean1.shape)
 
 
 def debug_deep3dface_results():
+    from scipy.signal import savgol_filter
+
     matrix_npz = "../video_preprocess/train1_deep3Dface/train1.npz"
+    matrix_npz = "../gangqiang_video_preprocess/gangqiang_deep3Dface/train1.npz"
 
     face_template = np.load(open(matrix_npz, 'rb'))
     face_template = face_template['face']
 
     print(type(face_template), face_template.shape)
-
     print(np.min(face_template), np.max(face_template))
+
+    print(np.min(face_template[0, -187:]), np.max(face_template[0, -187:]))
 
 
 
@@ -56,6 +57,6 @@ if __name__ == "__main__":
 
     # debug_audio2face_results()
 
-    # debug_deep3dface_results()
+    debug_deep3dface_results()
 
     debug_face_template()

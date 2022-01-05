@@ -49,7 +49,7 @@ w = 512
 headpose = np.zeros((num_image,258),dtype=np.float32)
 base = int(csvinfo.iloc[0]['frame'])-1
 # --- 2. fit head pose for each frame
-for frame_count in range(1,num_image+1):
+for frame_count in range(1, num_image+1):
     if frame_count % 1000 == 0:
         print(frame_count)
     subcsvinfo = csvinfo[csvinfo['frame']==frame_count+base]
@@ -64,11 +64,12 @@ for frame_count in range(1,num_image+1):
     fitted_angles = mesh.transform.matrix2angle(fitted_R)
     fitted_angles = np.array([fitted_angles])
 
-    chi_prev = np.concatenate((fitted_angles[0,:],[fitted_s],fitted_t,realparams[frame_count-1,80:144]),axis=0)
-    params = np.concatenate((chi_prev,idparams,texparams,gammaparams),axis=0)
-    headpose[frame_count-1,:] = params
+    chi_prev = np.concatenate((fitted_angles[0,:], [fitted_s], fitted_t, realparams[frame_count-1, 80:144]), axis=0)
+    params = np.concatenate((chi_prev, idparams, texparams, gammaparams), axis=0)
+    headpose[frame_count-1, :] = params
+
 # additional smooth
-headpose1 = np.zeros((num_image,258),dtype=np.float32)
+headpose1 = np.zeros((num_image, 258), dtype=np.float32)
 headpose1 = savgol_filter(headpose, 5, 3, axis=0)
 
 print(f"headpose shape: {headpose1.shape}")

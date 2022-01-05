@@ -54,27 +54,34 @@ def set_requires_grad(nets, requires_grad=False):
                 param.requires_grad = requires_grad
 
 
-def get_losses(modeldis, criteon1, motionlogits, motiony, ):
-    loss_s = 10 * (criteon1(yf[:,:1,:6], y[:,:1,:6]) + 
-                    criteon1(yf[:,:1,6], y[:,:1,6]) + 
-                    criteon1(yf[:,:1,6:], y[:,:1,6:]))
-    lossg_e = 20*criteon(yf[:,:,7:], y[:,:,7:]) # Expression loss
-    lossg_em = 200*criteon(motionlogits[:,:,7:], motiony[:,:,7:]) # Expression motion loss
+def eval_model(model_G, val_dataset_loader, criteon1, criteon):
+    model_G.eval()
+
+    with torch.no_grad():
+        total_eval_loss = 0
+
+        for (x, y) in val_dataset_loader:
+            x, y = x.to(device), y.to(device)
+            motiony = y[:,1:,:] - y[:,:-1,:]
+
+            yf = model_G(x, y[:,:1,:])
+            motionlogits = yf[:,1:,:] - yf[:,:-1,:]
+
+            ## Initial state loss
+            loss_s = 10 * (criteon1(yf[:,:1,:6], y[:,:1,:6]) + 
+                           criteon1(yf[:,:1,6], y[:,:1,6]) + 
+                           criteon1(yf[:,:1,6:], y[:,:1,6:]))
+            lossg_e = 20 * criteon(yf[:,:,7:], y[:,:,7:]) # Expression loss
+            lossg_em = 200 * criteon(motionlogits[:,:,7:], motiony[:,:,7:]) # Expression motion loss
+
+            lossG =  loss_s + lossg_e +  lossg_em
+
+            total_eval_loss += lossG.item()
+        
+        avg_eval_loss = total_eval_loss / len(val_dataset_loader)
     
-    loss_au = 0.5 * criteon(yf[:,:,6], y[:,:,6])
-    loss_aum = 1 * criteon(motionlogits[:,:,6], motiony[:,:,6])
-    loss_pose = 1 * criteon(yf[:,:,:6], y[:,:,:6])
-    loss_posem = 10 * criteon(motionlogits[:,:,:6], motiony[:,:,:6])
-    
-    predf2 = modeldis(torch.cat([yf, motionlogits], 1))
-    lossg_gan = criteon(torch.ones_like(predf2), predf2)
-
-    lossG =  loss_s + lossg_e +  lossg_em + loss_au + loss_aum + loss_pose + loss_posem + 0.1*lossg_gan
-
-
-def eval_model(model_G, val_dataset_loader):
-    pass
-
+    return avg_eval_loss
+            
 
 def main():
     lr = 1e-4
@@ -113,6 +120,7 @@ def main():
             predr = modeldis(torch.cat([y, motiony], 1))
             lossr = criteon(torch.ones_like(predr), predr)
 
+            ## Generator forward
             yf = modelgen(x, y[:,:1,:])
             motionlogits = yf[:,1:,:] - yf[:,:-1,:]
             
@@ -126,6 +134,8 @@ def main():
 
             # generator
             set_requires_grad(modeldis, False)
+
+            ## Initial state loss
             loss_s = 10 * (criteon1(yf[:,:1,:6], y[:,:1,:6]) + 
                            criteon1(yf[:,:1,6], y[:,:1,6]) + 
                            criteon1(yf[:,:1,6:], y[:,:1,6:]))
@@ -134,6 +144,7 @@ def main():
             
             loss_au = 0.5 * criteon(yf[:,:,6], y[:,:,6])
             loss_aum = 1 * criteon(motionlogits[:,:,6], motiony[:,:,6])
+
             loss_pose = 1 * criteon(yf[:,:,:6], y[:,:,:6])
             loss_posem = 10 * criteon(motionlogits[:,:,:6], motiony[:,:,:6])
             
