@@ -53,16 +53,33 @@ def set_requires_grad(nets, requires_grad=False):
             for param in net.parameters():
                 param.requires_grad = requires_grad
 
-def weights_init(m):
-    if isinstance(m, nn.Linear):
-        nn.init.kaiming_normal_(m.weight)
-        m.bias.data.fill_(0)
+
+def get_losses(modeldis, criteon1, motionlogits, motiony, ):
+    loss_s = 10 * (criteon1(yf[:,:1,:6], y[:,:1,:6]) + 
+                    criteon1(yf[:,:1,6], y[:,:1,6]) + 
+                    criteon1(yf[:,:1,6:], y[:,:1,6:]))
+    lossg_e = 20*criteon(yf[:,:,7:], y[:,:,7:]) # Expression loss
+    lossg_em = 200*criteon(motionlogits[:,:,7:], motiony[:,:,7:]) # Expression motion loss
+    
+    loss_au = 0.5 * criteon(yf[:,:,6], y[:,:,6])
+    loss_aum = 1 * criteon(motionlogits[:,:,6], motiony[:,:,6])
+    loss_pose = 1 * criteon(yf[:,:,:6], y[:,:,:6])
+    loss_posem = 10 * criteon(motionlogits[:,:,:6], motiony[:,:,:6])
+    
+    predf2 = modeldis(torch.cat([yf, motionlogits], 1))
+    lossg_gan = criteon(torch.ones_like(predf2), predf2)
+
+    lossG =  loss_s + lossg_e +  lossg_em + loss_au + loss_aum + loss_pose + loss_posem + 0.1*lossg_gan
+
+
+def eval_model(model_G, val_dataset_loader):
+    pass
+
 
 def main():
     lr = 1e-4
-    modelgen = TfaceGAN().to(device)
-
-    modeldis = NLayerDiscriminator().to(device)
+    modelgen = TfaceGAN().to(device) # Generator
+    modeldis = NLayerDiscriminator().to(device) # Discriminator
 
     modelgen.load_state_dict(torch.load(opt.pretainpath_gen))
 
@@ -83,20 +100,21 @@ def main():
             torch.save(modeldis.state_dict(), opt.savepath+'/Dis-'+str(epoch)+'.mdl')
 
         for step, (x, y) in enumerate(train_loader):
-            global_step += 1
             # x: Bx128x16x29 y: Bx128x71
+            global_step += 1
+
             modelgen.train()
             x, y = x.to(device), y.to(device)
             motiony = y[:,1:,:] - y[:,:-1,:]
 
-            # #dis
+            ## dis
             set_requires_grad(modeldis, True)
 
             predr = modeldis(torch.cat([y, motiony], 1))
-            lossr = criteon(torch.ones_like(predr),predr)
+            lossr = criteon(torch.ones_like(predr), predr)
 
             yf = modelgen(x, y[:,:1,:])
-            motionlogits = yf[:,1:,:]-yf[:,:-1,:]
+            motionlogits = yf[:,1:,:] - yf[:,:-1,:]
             
             predf = modeldis(torch.cat([yf, motionlogits], 1).detach())
             lossf = criteon(torch.zeros_like(predf),predf)
@@ -108,23 +126,24 @@ def main():
 
             # generator
             set_requires_grad(modeldis, False)
-            loss_s = 10*(criteon1(yf[:,:1,:6], y[:,:1,:6])+criteon1(yf[:,:1,6], y[:,:1,6])+criteon1(yf[:,:1,6:], y[:,:1,6:]))
-            lossg_e = 20*criteon(yf[:,:,7:], y[:,:,7:])
-            lossg_em = 200*criteon(motionlogits[:,:,7:], motiony[:,:,7:])
+            loss_s = 10 * (criteon1(yf[:,:1,:6], y[:,:1,:6]) + 
+                           criteon1(yf[:,:1,6], y[:,:1,6]) + 
+                           criteon1(yf[:,:1,6:], y[:,:1,6:]))
+            lossg_e = 20 * criteon(yf[:,:,7:], y[:,:,7:]) # Expression loss
+            lossg_em = 200 * criteon(motionlogits[:,:,7:], motiony[:,:,7:]) # Expression motion loss
             
-            loss_au = 0.5*criteon(yf[:,:,6],y[:,:,6])
-            loss_aum = 1*criteon(motionlogits[:,:,6], motiony[:,:,6])
-            loss_pose = 1*criteon(yf[:,:,:6],y[:,:,:6])
-            loss_posem = 10*criteon(motionlogits[:,:,:6], motiony[:,:,:6])
+            loss_au = 0.5 * criteon(yf[:,:,6], y[:,:,6])
+            loss_aum = 1 * criteon(motionlogits[:,:,6], motiony[:,:,6])
+            loss_pose = 1 * criteon(yf[:,:,:6], y[:,:,:6])
+            loss_posem = 10 * criteon(motionlogits[:,:,:6], motiony[:,:,:6])
+            
             predf2 = modeldis(torch.cat([yf, motionlogits], 1))
-  
-            lossg_gan = criteon(torch.ones_like(predf2),predf2)
+            lossg_gan = criteon(torch.ones_like(predf2), predf2)
 
             lossG =  loss_s + lossg_e +  lossg_em + loss_au + loss_aum + loss_pose + loss_posem + 0.1*lossg_gan
 
             tb_writer.add_scalar("train/lossG", lossG, global_step)
 
-            # lossG =   loss_pose_1 + loss_pose_2
             optimG.zero_grad()
             lossG.backward()
             optimG.step()
