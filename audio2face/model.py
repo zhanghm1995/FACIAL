@@ -80,7 +80,9 @@ class TfaceGAN(nn.Module):
 
         self.G1 = zcxNet()
 
-    def forward(self, x,y):
+    def forward(self, x, y):
+        ## x:audio feature: BxNx16x29
+        ## y: first pose:
         x1 = x[:,:,8,:].unsqueeze(1)
         out = F.leaky_relu(self.bn11(self.conv11(x1)))
         # 64,32,64,13

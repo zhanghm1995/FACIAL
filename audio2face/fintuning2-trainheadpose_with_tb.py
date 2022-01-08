@@ -54,7 +54,7 @@ if opt.eval_npzpath is not None:
                                     shuffle=False,
                                     drop_last=True,
                                     pin_memory=True)
-    print(f"Training data length: {len(val_dataset)} / {len(val_dataset_loader)}...")
+    print(f"Val data length: {len(val_dataset)} / {len(val_dataset_loader)}...")
 
 
 def set_requires_grad(nets, requires_grad=False):
@@ -178,7 +178,7 @@ def main():
 
         if opt.eval_npzpath is not None:
             ## ----------Start eval--------------------
-            print(f"================Start eval...======================")
+            print(f"================Start eval======================")
             eval_loss = eval_model(modelgen, val_dataset_loader, criteon1, criteon)
             tb_writer.add_scalar("eval/lossG", eval_loss, global_step)
 

@@ -42,8 +42,10 @@ class Facial_Dataset(Dataset):
 
             if blink_path is not None:
                 blinkinfo = pd.read_csv(blink_path)
-                aublink = blinkinfo['AU45_r'].values
-                print(aublink.shape)
+                try:
+                    aublink = blinkinfo['AU45_r'].values
+                except:
+                    aublink = blinkinfo[' AU45_r'].values
             else:
                 aublink = np.zeros((audio.shape[0],))
 
