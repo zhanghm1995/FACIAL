@@ -7,4 +7,4 @@ set -x
 
 data_root=../video_preprocessed/id00001/gangqiang_1
 python -u render_netface_fitpose.py --real_params_path $data_root/train_pose_new.npz \
-                                    --outpath $data_root/train_A/
+                                    --outpath $data_root/train_B/

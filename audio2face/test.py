@@ -63,7 +63,8 @@ for audio_path in audio_list:
         
         aublink = np.zeros((reference_params.shape[0], 1))
 
-        first_pose = np.concatenate((reference_params[:,:6], aublink, reference_params[:,7:71]), axis=1, dtype=np.float32)
+        first_pose = np.concatenate((reference_params[:,:6], aublink, reference_params[:,7:71]), axis=1)
+        first_pose = first_pose.astype(np.float32)
         firstpose = torch.from_numpy(first_pose[:1, ...]).unsqueeze(0)
         
 

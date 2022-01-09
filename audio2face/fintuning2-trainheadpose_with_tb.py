@@ -2,6 +2,7 @@
 """
 import  torch
 from torch import optim, nn, autograd
+from torch.nn.modules import loss
 from torch.utils.data import DataLoader
 from model import TfaceGAN, NLayerDiscriminator
 from dataset102 import Facial_Dataset
@@ -39,7 +40,7 @@ epochs = 1100
 device = torch.device('cuda')
 torch.manual_seed(1234)
 
-training_set = Facial_Dataset(audio_paths, npz_paths, cvs_paths)
+training_set = Facial_Dataset(audio_paths, npz_paths)
 train_loader = DataLoader(training_set,
                           batch_size=batchsz,
                           shuffle=True,
@@ -64,6 +65,11 @@ def set_requires_grad(nets, requires_grad=False):
         if net is not None:
             for param in net.parameters():
                 param.requires_grad = requires_grad
+
+
+def save_dict2tensorboard(tb_writer, loss_dict, global_step, prefix="train"):
+    for key, value in loss_dict.items():
+        tb_writer.add_scalar(f"{prefix}/{key}", value, global_step)
 
 
 def eval_model(model_G, val_dataset_loader, criteon1, criteon):
@@ -147,6 +153,8 @@ def main():
             # generator
             set_requires_grad(modeldis, False)
 
+            loss_dict = {}
+
             ## Initial state loss
             loss_s = 10 * (criteon1(yf[:,:1,:6], y[:,:1,:6]) + 
                            criteon1(yf[:,:1,6], y[:,:1,6]) + 
@@ -163,9 +171,19 @@ def main():
             predf2 = modeldis(torch.cat([yf, motionlogits], 1))
             lossg_gan = criteon(torch.ones_like(predf2), predf2)
 
-            lossG =  loss_s + lossg_e +  lossg_em + loss_au + loss_aum + loss_pose + loss_posem + 0.1*lossg_gan
+            lossG =  loss_s + lossg_e + lossg_em + loss_au + loss_aum + loss_pose + loss_posem + 0.1*lossg_gan
 
-            tb_writer.add_scalar("train/lossG", lossG, global_step)
+            loss_dict["loss_s"] = loss_s
+            loss_dict["lossg_e"] = lossg_e
+            loss_dict["lossg_em"] = lossg_em
+            loss_dict["loss_au"] = loss_au
+            loss_dict["loss_aum"] = loss_aum
+            loss_dict["loss_pose"] = loss_pose
+            loss_dict["loss_posem"] = loss_posem
+            loss_dict["lossg_gan"] = 0.1*lossg_gan
+            loss_dict["lossG"] = lossG
+
+            save_dict2tensorboard(tb_writer, loss_dict, global_step, "train")
 
             optimG.zero_grad()
             lossG.backward()
@@ -181,7 +199,6 @@ def main():
             print(f"================Start eval======================")
             eval_loss = eval_model(modelgen, val_dataset_loader, criteon1, criteon)
             tb_writer.add_scalar("eval/lossG", eval_loss, global_step)
-
 
 
 if __name__ == '__main__':

@@ -42,7 +42,7 @@ def process_audio(ds_path, audio, fps):
 
 fps = 30                                              # frame rate, same, do not need change
 dataset_path = '../video_preprocessed/id00001'        # The root of my audios, inside is cliton, obama....
-subjects = ['gangqiang_1']     # names
+subjects = ['gangqiang_3']     # names
 ds_fname = 'ds_graph/output_graph.pb'  # deep speech model
 
 audio4deepspeech = {}
@@ -66,6 +66,7 @@ for subject in processed_audio.keys():                                          
     out_path = osp.join(dataset_path, subject)
     if not os.path.exists(out_path):
         os.makedirs(out_path)
+    
     for sentence in processed_audio[subject]:
         out_file = os.path.join(out_path, sentence +'.pkl')
         _audio = processed_audio[subject][sentence]['audio']

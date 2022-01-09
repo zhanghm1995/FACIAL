@@ -81,7 +81,7 @@ def render(facemodel, chi):
     fitted_s = chi[3] 
     fitted_t = chi[4:7].copy()
     fitted_t[2] = 1.0
-    fitted_ep = np.expand_dims(chi[7:71],1)
+    fitted_ep = np.expand_dims(chi[7:71],1) * 1.8
     fitted_sp = np.expand_dims(facemodel.sp,1)
     tex_coeff = np.expand_dims(facemodel.tex,1)
     expression1 = facemodel.exBase.dot(fitted_ep)
