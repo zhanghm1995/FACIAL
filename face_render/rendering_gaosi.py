@@ -20,6 +20,7 @@ parser.add_argument('--outpath', type=str, default = '../examples/rendering/')
 
 opt = parser.parse_args()
 
+
 def Compute_norm(face_shape, facemodel):
 
 	face_id = facemodel.tri # vertex index for each triangle face, with shape [F,3], F is number of faces

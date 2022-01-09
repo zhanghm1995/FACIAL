@@ -5,6 +5,6 @@ set -x
 #                           --deepface_path ../gangqiang_video_preprocess/gangqiang_deep3Dface/train1.npz \
 #                           --save_path ../gangqiang_video_preprocess/gangqiang_posenew.npz
 
-data_root=../video_preprocessed/id00001/gangqiang_1
+data_root=../video_preprocessed/id00001/gangqiang_3
 python -u render_netface_fitpose.py --real_params_path $data_root/train_pose_new.npz \
-                                    --outpath $data_root/train_B/
+                                    --outpath $data_root/train_A/
