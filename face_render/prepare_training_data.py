@@ -15,7 +15,7 @@ from face3d import mesh
 
 def parse_args():
     parser = argparse.ArgumentParser(description='netface_setting')
-    parser.add_argument('--data_root', type=str, default='../video_preprocessed/id00001/gangqiang_1')
+    parser.add_argument('--data_root', type=str, default='../video_preprocessed/id00001/gangqiang_3')
     opt = parser.parse_args()
 
     opt.dee3dface_param_folder = osp.join(opt.data_root, "deep3dface")

@@ -49,7 +49,7 @@ train_loader = DataLoader(training_set,
 print(f"Training data length: {len(training_set)} / {len(train_loader)}...")
 
 if opt.eval_npzpath is not None:
-    val_dataset = Facial_Dataset(opt.eval_audiopath, opt.eval_npzpath, cvs_paths=None)
+    val_dataset = Facial_Dataset([opt.eval_audiopath], [opt.eval_npzpath], cvs_paths=None)
     val_dataset_loader = DataLoader(val_dataset,
                                     batch_size=batchsz,
                                     shuffle=False,
@@ -78,6 +78,9 @@ def eval_model(model_G, val_dataset_loader, criteon1, criteon):
     with torch.no_grad():
         total_eval_loss = 0
 
+        loss_dict = {'loss_s': 0, 'lossg_e': 0, 'lossg_em': 0,
+                     'loss_pose': 0, 'loss_posem': 0}
+
         for (x, y) in val_dataset_loader:
             x, y = x.to(device), y.to(device)
             motiony = y[:,1:,:] - y[:,:-1,:]
@@ -92,13 +95,29 @@ def eval_model(model_G, val_dataset_loader, criteon1, criteon):
             lossg_e = 20 * criteon(yf[:,:,7:], y[:,:,7:]) # Expression loss
             lossg_em = 200 * criteon(motionlogits[:,:,7:], motiony[:,:,7:]) # Expression motion loss
 
-            lossG =  loss_s + lossg_e +  lossg_em
+            loss_pose = 1 * criteon(yf[:,:,:6], y[:,:,:6])
+            loss_posem = 10 * criteon(motionlogits[:,:,:6], motiony[:,:,:6])
+
+            lossG =  loss_s + lossg_e + lossg_em + loss_pose + loss_posem
+
+            loss_dict['loss_s'] += loss_s.item()
+            loss_dict['lossg_e'] += lossg_e.item()
+            loss_dict['lossg_em'] += lossg_em.item()
+            loss_dict['loss_pose'] += loss_pose.item()
+            loss_dict['loss_posem'] += loss_posem.item()
 
             total_eval_loss += lossG.item()
         
         avg_eval_loss = total_eval_loss / len(val_dataset_loader)
+
+        loss_dict['loss_s'] = loss_dict['loss_s'] / len(val_dataset_loader)
+        loss_dict['lossg_e'] = loss_dict['lossg_e'] / len(val_dataset_loader)
+        loss_dict['lossg_em'] = loss_dict['lossg_em'] / len(val_dataset_loader)
+        loss_dict['loss_pose'] = loss_dict['loss_pose'] / len(val_dataset_loader)
+        loss_dict['loss_posem'] = loss_dict['loss_posem'] / len(val_dataset_loader)
+        loss_dict['lossG'] = avg_eval_loss
     
-    return avg_eval_loss
+    return loss_dict
             
 
 def main():
@@ -120,9 +139,6 @@ def main():
 
     global_step = -1
     for epoch in range(0, epochs):
-        if epoch % 5 == 0:
-            torch.save(modelgen.state_dict(), opt.savepath+'/Gen-'+str(epoch)+'.mdl')
-            torch.save(modeldis.state_dict(), opt.savepath+'/Dis-'+str(epoch)+'.mdl')
 
         for step, (x, y) in enumerate(train_loader):
             # x: Bx128x16x29 y: Bx128x71
@@ -198,7 +214,11 @@ def main():
             ## ----------Start eval--------------------
             print(f"================Start eval======================")
             eval_loss = eval_model(modelgen, val_dataset_loader, criteon1, criteon)
-            tb_writer.add_scalar("eval/lossG", eval_loss, global_step)
+            save_dict2tensorboard(tb_writer, eval_loss, global_step, "val")
+
+        if epoch % 5 == 0:
+            torch.save(modelgen.state_dict(), opt.savepath+'/Gen-'+str(epoch)+ "-" + str(global_step) + '.mdl')
+            torch.save(modeldis.state_dict(), opt.savepath+'/Dis-'+str(epoch)+ "-" + str(global_step) +'.mdl')
 
 
 if __name__ == '__main__':

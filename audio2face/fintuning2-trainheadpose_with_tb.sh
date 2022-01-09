@@ -13,7 +13,15 @@ set -x
 #                                               --savepath ./checkpoint/train1_with_tb
 
 ## For not using OpenFace case
+# python -u fintuning2-trainheadpose_with_tb.py --audiopath ../video_preprocessed/id00001/gangqiang_1/gangqiang_1.pkl \
+#                                               --npzpath ../video_preprocessed/id00001/gangqiang_1/train_pose_new.npz \
+#                                               --pretainpath_gen ./checkpoint/chinese/Gen-105.mdl \
+#                                               --savepath ./checkpoint/gangqiang_1
+
+
 python -u fintuning2-trainheadpose_with_tb.py --audiopath ../video_preprocessed/id00001/gangqiang_1/gangqiang_1.pkl \
                                               --npzpath ../video_preprocessed/id00001/gangqiang_1/train_pose_new.npz \
-                                              --pretainpath_gen ./checkpoint/chinese/Gen-105.mdl \
-                                              --savepath ./checkpoint/gangqiang_1
+                                              --eval_audiopath ../video_preprocessed/id00001/gangqiang_3/gangqiang_3.pkl \
+                                              --eval_npzpath ../video_preprocessed/id00001/gangqiang_3/train_pose_new.npz \
+                                              --pretainpath_gen ./checkpoint/obama/Gen-20-0.0006273046686902202.mdl \
+                                              --savepath ./checkpoint/gangqiang_1_with_eval
