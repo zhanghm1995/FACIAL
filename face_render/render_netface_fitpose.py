@@ -105,7 +105,7 @@ def render(facemodel, chi):
 
     h = 512
     w = 512
-    colors[mask3,:] = 255.0
+    # colors[mask3,:] = 255.0
     image_vertices = mesh.transform.to_image(projected_vertices, h, w)
     image = mesh.render.render_colors(image_vertices, triangles-1, colors, h, w)
 
