@@ -47,7 +47,7 @@ class Facial_Dataset(Dataset):
                 except:
                     aublink = blinkinfo[' AU45_r'].values
             else:
-                aublink = np.zeros((audio.shape[0],))
+                aublink = np.zeros((audio.shape[0], 1))
 
             std1 = np.std(params, axis=0)
             mean1 = np.mean(params,axis=0)
@@ -65,7 +65,7 @@ class Facial_Dataset(Dataset):
             aublink = aublink[:, np.newaxis]
 
             self.dataset_audio.append(audio)
-            self.dataset_exp_param.append(np.concatenate(( params[:,:6], aublink, params[:,7:71]),axis=1))
+            self.dataset_exp_param.append(np.concatenate((params[:,:6], aublink, params[:,7:71]), axis=1))
             self.dataset_idx += list(np.arange(0, min_num_frame-self.frames, 1) + base)
             base+= min_num_frame
 

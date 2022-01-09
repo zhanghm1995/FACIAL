@@ -13,7 +13,7 @@ import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 
 parser = argparse.ArgumentParser(description='Train_setting')
-parser.add_argument('--audiopath', type=str, default='/content/FACIAL/examples/audio_preprocessed/train1.pkl') # DeepSpeech features
+parser.add_argument('--audiopath', type=str, default='/content/FACIAL/examples/audio_preprocessed/train1.pkl') # Audio DeepSpeech features
 parser.add_argument('--npzpath', type=str, default='/content/FACIAL/video_preprocess/train1_posenew.npz') # GT Deep3DFace params
 parser.add_argument('--eval_audiopath', type=str, default=None)
 parser.add_argument('--eval_npzpath', type=str, default=None)

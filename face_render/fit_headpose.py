@@ -25,41 +25,35 @@ facemodel = BFM()
 n_exp_para = facemodel.exBase.shape[1]
 
 kpt_ind = facemodel.keypoints
-triangles = facemodel.tri
 
-
-csv_path = opt.csv_path
-csvinfo=pd.read_csv(csv_path)
+csvinfo = pd.read_csv(opt.csv_path)
 num_image = len(csvinfo)
-base = int(csvinfo.iloc[0]['frame'])-1
-deepface_path = opt.deepface_path
-save_path = opt.save_path
+base = int(csvinfo.iloc[0]['frame']) - 1 # 0
 
+realparams = np.load(open(opt.deepface_path, 'rb'))['face']
 
-realparams = np.load(open(deepface_path, 'rb'))
-realparams = realparams['face']
-
-idparams = realparams[0,0:80]
-texparams = realparams[0,144:224]
-gammaparams = realparams[0,227:254]
+idparams = realparams[0, 0:80]
+texparams = realparams[0, 144:224]
+gammaparams = realparams[0, 227:254]
 
 h = 512
 w = 512
 
-headpose = np.zeros((num_image,258),dtype=np.float32)
-base = int(csvinfo.iloc[0]['frame'])-1
+headpose = np.zeros((num_image, 258), dtype=np.float32)
+
 # --- 2. fit head pose for each frame
 for frame_count in range(1, num_image+1):
     if frame_count % 1000 == 0:
         print(frame_count)
     subcsvinfo = csvinfo[csvinfo['frame']==frame_count+base]
-    x = np.zeros((68,2),dtype=np.float32)
+    
+    x = np.zeros((68, 2), dtype=np.float32)
     for i in range(68):
-        x[i,0] = subcsvinfo.iloc[0]['x_'+str(i)]-w/2
-        x[i,1] = (h-subcsvinfo.iloc[0]['y_'+str(i)])- h/2 -1
+        x[i,0] = subcsvinfo.iloc[0]['x_'+str(i)] - w/2
+        x[i,1] = (h-subcsvinfo.iloc[0]['y_'+str(i)]) - h/2 -1
     X_ind = kpt_ind
 
-    fitted_sp, fitted_ep, fitted_s, fitted_R, fitted_t = fit_points(x, X_ind, facemodel, np.expand_dims(idparams,0), n_ep = n_exp_para, max_iter = 10)
+    fitted_sp, fitted_ep, fitted_s, fitted_R, fitted_t = fit_points(x, X_ind, facemodel, np.expand_dims(idparams,0), n_ep=n_exp_para, max_iter=10)
 
     fitted_angles = mesh.transform.matrix2angle(fitted_R)
     fitted_angles = np.array([fitted_angles])
@@ -73,4 +67,4 @@ headpose1 = np.zeros((num_image, 258), dtype=np.float32)
 headpose1 = savgol_filter(headpose, 5, 3, axis=0)
 
 print(f"headpose shape: {headpose1.shape}")
-np.savez(save_path, face = headpose1)
+np.savez(opt.save_path, face = headpose1)

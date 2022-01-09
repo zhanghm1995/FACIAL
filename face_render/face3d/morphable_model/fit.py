@@ -164,6 +164,7 @@ def fit_points(x, X_ind, model, id_coeff, n_ep, max_iter = 4):
     Args:
         x: (n, 2) image points
         X_ind: (n,) corresponding Model vertex indices
+        n_ep (int): M, expression basis matrix dimension is (M, 64), this is number M
         model: 3DMM
         max_iter: iteration
     Returns:
