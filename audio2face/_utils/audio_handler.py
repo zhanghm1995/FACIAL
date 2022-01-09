@@ -22,8 +22,13 @@ import re
 import copy
 import resampy
 import numpy as np
-import tensorflow.compat.v1 as tf
-tf.disable_v2_behavior()
+
+try:
+    import tensorflow.compat.v1 as tf
+    tf.disable_v2_behavior()
+except:
+    import tensorflow as tf
+    
 from python_speech_features import mfcc
 
 from tqdm import tqdm

@@ -34,11 +34,10 @@ class Facial_Dataset(Dataset):
             try:
                 assert audio_name == param_name
             except:
-                print (audio_name, param_name)
+                print(audio_name, param_name)
                 
             audio = pickle.load(open(audio_path, 'rb'), encoding=' iso-8859-1')
-            params = np.load(open(param_path, 'rb'))
-            params = params['face']
+            params = np.load(open(param_path, 'rb'))['face']
 
             if blink_path is not None:
                 blinkinfo = pd.read_csv(blink_path)
