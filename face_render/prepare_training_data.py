@@ -15,7 +15,7 @@ from face3d import mesh
 
 def parse_args():
     parser = argparse.ArgumentParser(description='netface_setting')
-    parser.add_argument('--data_root', type=str, default='../video_preprocessed/id00002/obama_weekly_2')
+    parser.add_argument('--data_root', type=str, default='../video_preprocessed/id00001/gangqiang_5')
     opt = parser.parse_args()
 
     opt.dee3dface_param_folder = osp.join(opt.data_root, "deep3dface")
@@ -119,10 +119,20 @@ def fit_headpose(opt, deep3dface_params):
     np.savez(opt.save_path, face=headpose1)
 
 
+def prepare_origin_facial_data(opt):
+    deep3dface_matrix = get_deep3dface_matrix(opt)
+
+    fit_headpose(opt, deep3dface_matrix)
+
+
+def prepare_expression_only_data(opt):
+    save_path = osp.join(opt.data_root, "deep3dface.npz")
+
+    deep3dface_matrix = get_deep3dface_matrix(opt)
+    np.savez(save_path, face=deep3dface_matrix)
+
 
 if __name__ == "__main__":
     opt = parse_args()
 
-    deep3dface_matrix = get_deep3dface_matrix(opt)
-
-    fit_headpose(opt, deep3dface_matrix)
+    prepare_expression_only_data(opt)

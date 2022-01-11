@@ -6,13 +6,13 @@ from    torch import nn
 from    torch.nn import functional as F 
 
 class zcxNet(nn.Module):
-    def __init__(self):
+    def __init__(self, pred_ch=71):
         super(zcxNet, self).__init__()
 
         self.kernel_size=[3, 1]
         self.stride_size=[2, 1]
         self.num_conv_filters=[29, 32, 32, 64, 64]
-        self.num_linear_layer=[32,71]
+        self.num_linear_layer=[32, pred_ch]
         # 64, 29, 16, 1
         self.conv1 = nn.Sequential(nn.Conv2d(self.num_conv_filters[0], self.num_conv_filters[1], kernel_size=self.kernel_size, stride=self.stride_size,padding=(1,0)),
                                         nn.ReLU(),
@@ -49,7 +49,7 @@ class zcxNet(nn.Module):
         return x
 
 class TfaceGAN(nn.Module):
-    def __init__(self, input_nc=256, output_nc=256, num_downs=6, ngf=64, norm_layer=nn.BatchNorm1d, use_dropout=False):
+    def __init__(self, input_nc=256, output_nc=256, pred_ch=71, num_downs=6, ngf=64, norm_layer=nn.BatchNorm1d, use_dropout=False):
         super(TfaceGAN, self).__init__()
         unet_block = UnetSkipConnectionBlock(ngf * 8, ngf * 8, input_nc=None, submodule=None, norm_layer=norm_layer, innermost=True)  
         for i in range(1):          
@@ -79,8 +79,8 @@ class TfaceGAN(nn.Module):
 
         self.conv62 = nn.Conv1d(256, 32, kernel_size=3, stride=1,padding=1)
 
+        self.G1 = zcxNet(pred_ch)
 
-        self.G1 = zcxNet()
 
     def forward(self, x, y):
         ## x:audio feature: BxNx16x29

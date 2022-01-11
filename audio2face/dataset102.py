@@ -84,3 +84,56 @@ class Facial_Dataset(Dataset):
         audio = self.dataset_audio[self.dataset_idx[idx]:self.dataset_idx[idx]+self.frames]
 
         return audio, self.dataset_exp_param[self.dataset_idx[idx]:self.dataset_idx[idx]+self.frames]
+
+
+class ExpressionDataset(Dataset):
+    """Only consider the expression parameters
+    """
+    def __init__(self, audio_paths, deep3dface_param_paths):
+        """[summary]
+
+        Args:
+            audio_paths ([list]): Audio feature pickle file path list
+            deep3dface_param_paths (list): FaceRecon 3D parameters file path list
+        """
+        self.audio_path_list = audio_paths
+        self.mesh_param_path_list = deep3dface_param_paths
+
+        self.frames = 128
+
+        self.dataset_audio = []
+        self.dataset_exp_param = []
+        self.dataset_idx = []
+        
+        base = 0
+
+        for audio_path, param_path in zip(self.audio_path_list, self.mesh_param_path_list):
+            audio = pickle.load(open(audio_path, 'rb'), encoding=' iso-8859-1')
+            params = np.load(open(param_path, 'rb'))['face']
+
+            min_num_frame = min(params.shape[0], audio.shape[0])
+
+            if params.shape[0] != audio.shape[0]:
+                params = params[0:min_num_frame,:]
+                audio = audio[0:min_num_frame,:,:]
+
+            self.dataset_audio.append(audio)
+            self.dataset_exp_param.append(params[:, 80:144])
+            self.dataset_idx += list(np.arange(0, min_num_frame-self.frames, 1) + base)
+            base += min_num_frame
+
+
+        self.dataset_audio = torch.Tensor(np.concatenate(self.dataset_audio))
+        self.dataset_exp_param = torch.Tensor(np.concatenate(self.dataset_exp_param))
+        self.dataset_idx = torch.Tensor(np.array(self.dataset_idx)).to(torch.long)
+        
+        print(max(self.dataset_idx))
+        assert self.dataset_audio.shape[0] == self.dataset_exp_param.shape[0] 
+
+
+    def __len__(self):
+        return len(self.dataset_idx)
+
+    def __getitem__(self, idx):
+        audio = self.dataset_audio[self.dataset_idx[idx]:self.dataset_idx[idx]+self.frames]
+        return audio, self.dataset_exp_param[self.dataset_idx[idx]:self.dataset_idx[idx]+self.frames]
