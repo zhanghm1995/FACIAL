@@ -15,7 +15,7 @@ from face3d import mesh
 
 def parse_args():
     parser = argparse.ArgumentParser(description='netface_setting')
-    parser.add_argument('--data_root', type=str, default='../video_preprocessed/id00001/gangqiang_3')
+    parser.add_argument('--data_root', type=str, default='../video_preprocessed/id00002/obama_weekly_2')
     opt = parser.parse_args()
 
     opt.dee3dface_param_folder = osp.join(opt.data_root, "deep3dface")
@@ -102,7 +102,7 @@ def fit_headpose(opt, deep3dface_params):
             x[i, 1] = (h - curr_landmarks[i][1]) - h/2 -1
         X_ind = kpt_ind
 
-        fitted_sp, fitted_ep, fitted_s, fitted_R, fitted_t = fit_points(x, X_ind, facemodel, np.expand_dims(idparams,0), n_ep=n_exp_para, max_iter=10)
+        fitted_sp, fitted_ep, fitted_s, fitted_R, fitted_t = fit_points(x, X_ind, facemodel, np.expand_dims(idparams, 0), n_ep=n_exp_para, max_iter=10)
 
         fitted_angles = mesh.transform.matrix2angle(fitted_R)
         fitted_angles = np.array([fitted_angles])

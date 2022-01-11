@@ -85,6 +85,7 @@ for audio_path in audio_list:
                 _faceparam = modelgen(audio, firstpose.cuda())
                 faceparams[j:j+128,:] = _faceparam[0,:,:].cpu().numpy()
 
+        print(f"face parameters shape: ", faceparams.shape)
         np.savez(frames_out_path, face=faceparams)
 
 

@@ -26,7 +26,7 @@ class Facial_Dataset(Dataset):
         self.dataset_audio = []
         self.dataset_exp_param = []
         self.dataset_idx = []
-        base =0
+        base = 0
 
         for audio_path, param_path, blink_path in zip(self.audio_path_list, self.mesh_param_path_list, self.blink_path_list):
             audio_name = audio_path.split('/')[-1].replace('.pkl', '')

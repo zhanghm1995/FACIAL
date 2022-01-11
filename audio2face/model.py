@@ -31,6 +31,7 @@ class zcxNet(nn.Module):
         self.fc1 = nn.Linear(self.num_conv_filters[4], self.num_linear_layer[0])
         self.bn1 = nn.BatchNorm1d(self.num_linear_layer[0])
         self.fc2 = nn.Linear(self.num_linear_layer[0]+32, self.num_linear_layer[1])
+        # self.dropout = nn.Dropout(0.25)
 
 
     def forward(self, x, y):
@@ -42,7 +43,8 @@ class zcxNet(nn.Module):
         x = self.conv4(x)
         x = x.view(x.shape[0], x.shape[1])
         x = self.bn1(torch.tanh(self.fc1(x)))
-        x = torch.cat([x, y],dim=1) 
+        x = torch.cat([x, y],dim=1)
+        # x = self.dropout(x)
         x = self.fc2(x)
         return x
 
@@ -109,7 +111,7 @@ class TfaceGAN(nn.Module):
         fc_out   = []
         for step_t in range(x.size(1)):
             aa = out[:,step_t,:]
-            bb = self.G1(x[: ,step_t , :, :],aa)
+            bb = self.G1(x[: ,step_t , :, :], aa)
             fc_out.append(bb)
         return torch.stack(fc_out, dim = 1)
 

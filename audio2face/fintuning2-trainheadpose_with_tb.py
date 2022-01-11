@@ -83,22 +83,27 @@ def eval_model(model_G, val_dataset_loader, criteon1, criteon):
 
         for (x, y) in val_dataset_loader:
             x, y = x.to(device), y.to(device)
+
             motiony = y[:,1:,:] - y[:,:-1,:]
 
             yf = model_G(x, y[:,:1,:])
+
+            yf[:, :, :7] = y[:, :, :7]
+
             motionlogits = yf[:,1:,:] - yf[:,:-1,:]
 
             ## Initial state loss
             loss_s = 10 * (criteon1(yf[:,:1,:6], y[:,:1,:6]) + 
                            criteon1(yf[:,:1,6], y[:,:1,6]) + 
-                           criteon1(yf[:,:1,6:], y[:,:1,6:]))
+                           criteon1(yf[:,:1,7:], y[:,:1,7:]))
+            
             lossg_e = 20 * criteon(yf[:,:,7:], y[:,:,7:]) # Expression loss
             lossg_em = 200 * criteon(motionlogits[:,:,7:], motiony[:,:,7:]) # Expression motion loss
 
             loss_pose = 1 * criteon(yf[:,:,:6], y[:,:,:6])
             loss_posem = 10 * criteon(motionlogits[:,:,:6], motiony[:,:,:6])
 
-            lossG =  loss_s + lossg_e + lossg_em + loss_pose + loss_posem
+            lossG = loss_s + lossg_e + lossg_em + loss_pose + loss_posem
 
             loss_dict['loss_s'] += loss_s.item()
             loss_dict['lossg_e'] += lossg_e.item()
@@ -138,6 +143,7 @@ def main():
     tb_writer = SummaryWriter(osp.join(opt.savepath, "logdir"))
 
     global_step = -1
+    
     for epoch in range(0, epochs):
 
         for step, (x, y) in enumerate(train_loader):
@@ -156,10 +162,14 @@ def main():
 
             ## Generator forward
             yf = modelgen(x, y[:,:1,:])
+
+            ## ----Donot consider head pose and eye blink
+            yf[:, :, :7] = y[:, :, :7]
+
             motionlogits = yf[:,1:,:] - yf[:,:-1,:]
             
             predf = modeldis(torch.cat([yf, motionlogits], 1).detach())
-            lossf = criteon(torch.zeros_like(predf),predf)
+            lossf = criteon(torch.zeros_like(predf), predf)
 
             lossD = lossr + lossf
             optimD.zero_grad()
@@ -172,9 +182,9 @@ def main():
             loss_dict = {}
 
             ## Initial state loss
-            loss_s = 10 * (criteon1(yf[:,:1,:6], y[:,:1,:6]) + 
-                           criteon1(yf[:,:1,6], y[:,:1,6]) + 
-                           criteon1(yf[:,:1,6:], y[:,:1,6:]))
+            loss_s = 10 * (criteon1(yf[:, :1, :6], y[:, :1, :6]) + 
+                           criteon1(yf[:, :1, 6], y[:, :1, 6]) + 
+                           criteon1(yf[:, :1, 7:], y[:, :1, 7:]))
             lossg_e = 20 * criteon(yf[:,:,7:], y[:,:,7:]) # Expression loss
             lossg_em = 200 * criteon(motionlogits[:,:,7:], motiony[:,:,7:]) # Expression motion loss
             
@@ -187,7 +197,7 @@ def main():
             predf2 = modeldis(torch.cat([yf, motionlogits], 1))
             lossg_gan = criteon(torch.ones_like(predf2), predf2)
 
-            lossG =  loss_s + lossg_e + lossg_em + loss_au + loss_aum + loss_pose + loss_posem + 0.1*lossg_gan
+            lossG = loss_s + lossg_e + lossg_em + loss_au + loss_aum + loss_pose + loss_posem + 0.1*lossg_gan
 
             loss_dict["loss_s"] = loss_s
             loss_dict["lossg_e"] = lossg_e
@@ -206,13 +216,13 @@ def main():
             optimG.step()
 
             if step % 60 == 0:
-                print('epoch: ',epoch,' loss_s: ',loss_s.item(),' lossg_e: ',lossg_e.item(), ' lossg_em: ',lossg_em.item())
+                print('epoch: ',epoch, 'global_step', global_step, ' loss_s: ',loss_s.item(),' lossg_e: ',lossg_e.item(), ' lossg_em: ',lossg_em.item())
                 print(' loss_au: ',loss_au.item(),' loss_aum: ',loss_aum.item()) 
                 print(' loss_pose: ',loss_pose.item(),' loss_posem: ',loss_posem.item()) 
 
         if opt.eval_npzpath is not None:
             ## ----------Start eval--------------------
-            print(f"================Start eval======================")
+            print(f"=====================================Start eval================================================")
             eval_loss = eval_model(modelgen, val_dataset_loader, criteon1, criteon)
             save_dict2tensorboard(tb_writer, eval_loss, global_step, "val")
 
