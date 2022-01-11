@@ -257,6 +257,7 @@ class NLayerDiscriminator(nn.Module):
         sequence = [nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw), nn.LeakyReLU(0.2, True)]
         nf_mult = 1
         nf_mult_prev = 1
+        
         for n in range(1, n_layers):  # gradually increase the number of filters
             nf_mult_prev = nf_mult
             nf_mult = min(2 ** n, 8)
@@ -282,3 +283,75 @@ class NLayerDiscriminator(nn.Module):
         # (64,1,256,150)
         input = input.unsqueeze(1)
         return self.model(input)
+
+
+class FacialDiscriminator(nn.Module):
+    """Discriminator to check wether the generated facial parameters is true or not"""
+
+    def __init__(self, input_nc=1, ndf=16, n_layers=3, norm_layer=nn.BatchNorm2d):
+        super(FacialDiscriminator, self).__init__()
+        if type(norm_layer) == functools.partial:  # no need to use bias as BatchNorm2d has affine parameters
+            use_bias = norm_layer.func == nn.InstanceNorm2d
+        else:
+            use_bias = norm_layer == nn.InstanceNorm2d
+
+        kw, padw = 3, 1
+
+        sequence = [nn.Conv2d(input_nc, 32, kernel_size=5, stride=2, padding=1), nn.LeakyReLU(0.2, True)]
+        
+        sequence += [
+            nn.Conv2d(32, 64, kernel_size=5, stride=2, padding=1, bias=use_bias),
+            norm_layer(64),
+            nn.LeakyReLU(0.2, True)
+        ]
+
+
+        sequence += [
+            nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=use_bias),
+            norm_layer(128),
+            nn.LeakyReLU(0.2, True)
+        ]
+
+        sequence += [
+            nn.Conv2d(128, 128, kernel_size=3, stride=2, padding=1, bias=use_bias),
+            norm_layer(128),
+            nn.LeakyReLU(0.2, True)
+        ]
+
+        sequence += [
+            nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1, bias=use_bias),
+            norm_layer(256),
+            nn.LeakyReLU(0.2, True)
+        ]
+
+        sequence += [
+            nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1, bias=use_bias),
+            norm_layer(256),
+            nn.LeakyReLU(0.2, True)
+        ]
+
+        sequence += [
+            nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1, bias=use_bias),
+            norm_layer(512),
+            nn.LeakyReLU(0.2, True)
+        ]
+
+        self.model = nn.Sequential(*sequence)
+
+        self.fc = nn.Linear(512, 1)
+        self.sigmoid = torch.nn.Sigmoid()
+
+        # sequence += [nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw)]  # output 1 channel prediction map
+        
+
+    def forward(self, input):
+        """Standard forward."""
+        # (64,1,256,150)
+        input = input.unsqueeze(1)
+
+        x = self.model(input)
+
+        x = x.view(x.size(0), -1)
+        x = self.fc(x)
+        
+        return self.sigmoid(x)
