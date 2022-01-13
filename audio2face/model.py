@@ -71,7 +71,8 @@ class TfaceGAN(nn.Module):
         self.bn41 = nn.BatchNorm2d(256)
 
         self.resize = nn.UpsamplingBilinear2d([128,1])
-        self.conv42 = nn.Conv1d(327, 256, kernel_size=3, stride=1,padding=1)
+
+        self.conv42 = nn.Conv1d(320, 256, kernel_size=3, stride=1,padding=1)
         self.bn42 = nn.BatchNorm1d(256)
 
         self.conv52 = nn.Conv1d(256, 256, kernel_size=3, stride=1,padding=1)
@@ -84,7 +85,7 @@ class TfaceGAN(nn.Module):
 
     def forward(self, x, y):
         ## x:audio feature: BxNx16x29
-        ## y: first pose:
+        ## y: first pose: Bx1xM
         x1 = x[:,:,8,:].unsqueeze(1)
         out = F.leaky_relu(self.bn11(self.conv11(x1)))
         # 64,32,64,13
@@ -102,7 +103,7 @@ class TfaceGAN(nn.Module):
 
         out = self.model(out)
         y = y.permute(0,2,1).repeat(1,1,128)   
-        out = torch.cat([out, y],dim=1) 
+        out = torch.cat([out, y], dim=1) 
         out = F.leaky_relu(self.bn42(self.conv42(out)))
         out = F.leaky_relu(self.bn52(self.conv52(out)))
         out = self.conv62(out).permute(0,2,1)
@@ -114,6 +115,7 @@ class TfaceGAN(nn.Module):
             bb = self.G1(x[: ,step_t , :, :], aa)
             fc_out.append(bb)
         return torch.stack(fc_out, dim = 1)
+
 
 class UnetSkipConnectionBlock(nn.Module):
     """Defines the Unet submodule with skip connection.
@@ -287,7 +289,6 @@ class NLayerDiscriminator(nn.Module):
 
 class FacialDiscriminator(nn.Module):
     """Discriminator to check wether the generated facial parameters is true or not"""
-
     def __init__(self, input_nc=1, ndf=16, n_layers=3, norm_layer=nn.BatchNorm2d):
         super(FacialDiscriminator, self).__init__()
         if type(norm_layer) == functools.partial:  # no need to use bias as BatchNorm2d has affine parameters

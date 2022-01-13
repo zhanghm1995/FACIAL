@@ -4,7 +4,7 @@ import  torch
 from torch import optim, nn, autograd
 from torch.nn.modules import loss
 from torch.utils.data import DataLoader
-from model import TfaceGAN, FacialDiscriminator
+from model import TfaceGAN, FacialDiscriminator, NLayerDiscriminator
 from dataset102 import ExpressionDataset
 import argparse
 import os, glob
@@ -21,24 +21,40 @@ parser.add_argument('--eval_npzpath', type=str, default=None)
 parser.add_argument('--cvspath', type=str, default = '/content/FACIAL/video_preprocess/train1_openface/train1_512_audio.csv')
 parser.add_argument('--pretainpath_gen', type=str, default = '/content/FACIAL/audio2face/checkpoint/obama/Gen-20-0.0006273046686902202.mdl')
 parser.add_argument('--savepath', type=str, default = './checkpoint/train1')
+
 opt = parser.parse_args()
 
 
 if not os.path.exists(opt.savepath):
     os.mkdir(opt.savepath)
 
-audio_paths = []
-audio_paths.append(opt.audiopath)
-npz_paths = []
-npz_paths.append(opt.npzpath)
-cvs_paths = []
-cvs_paths.append(opt.cvspath)
+
+def get_training_list(opt):
+    audio_paths, npz_paths = [], []
+    
+    if opt.audiopath.endswith(".txt"):
+        lines = open(opt.audiopath).read().splitlines()
+
+        for line in lines:
+            audio_paths.append(line)
+            deep3dface_file = osp.join(osp.dirname(line), "deep3dface.npz")
+            npz_paths.append(deep3dface_file)
+        return audio_paths, npz_paths
+
+    audio_paths.append(opt.audiopath)
+    npz_paths.append(opt.npzpath)
+    return audio_paths, npz_paths
+
+
+audio_paths, npz_paths = get_training_list(opt)
+print(len(audio_paths))
+
 
 batchsz = 16
 epochs = 1100
 
 device = torch.device('cuda')
-torch.manual_seed(1234)
+torch.manual_seed(123)
 
 training_set = ExpressionDataset(audio_paths, npz_paths)
 train_loader = DataLoader(training_set,
@@ -92,13 +108,11 @@ def eval_model(model_G, val_dataset_loader, criteon1, criteon):
             motionlogits = nn.functional.pad(motionlogits, (0, 0, 0, 1)) # make it has the same dimension with y
 
             ## Initial state loss
-            loss_s = 10 * (criteon1(yf[:,:1,:6], y[:,:1,:6]) + 
-                           criteon1(yf[:,:1,6], y[:,:1,6]) + 
-                           criteon1(yf[:,:1,7:], y[:,:1,7:]))
+            loss_s = 10 * (criteon1(yf[:,:1,:], y[:,:1,:]))
             
             # Expression loss
-            lossg_e = 20 * criteon(yf[:,:,7:], y[:,:,7:])
-            lossg_em = 200 * criteon(motionlogits[:,:,7:], motiony[:,:,7:]) # Expression motion loss
+            lossg_e = 20 * criteon(yf[:,:,:], y[:,:,:])
+            lossg_em = 200 * criteon(motionlogits[:,:,:], motiony[:,:,:]) # Expression motion loss
 
             lossG = loss_s + lossg_e + lossg_em
 
@@ -119,15 +133,14 @@ def eval_model(model_G, val_dataset_loader, criteon1, criteon):
             
 
 def main():
-    lr = 1e-4
-
     modelgen = TfaceGAN(pred_ch=64).to(device) # Generator
-    modeldis = FacialDiscriminator().to(device) # Discriminator
+    # modeldis = FacialDiscriminator().to(device) # Discriminator
+    modeldis = NLayerDiscriminator().to(device) # Discriminator
 
-    # modelgen.load_state_dict(torch.load(opt.pretainpath_gen))
+    modelgen.load_state_dict(torch.load(opt.pretainpath_gen))
 
-    optimG = optim.Adam(modelgen.parameters(), lr=lr*0.1)
-    optimD = optim.Adam(modeldis.parameters(), lr=lr*0.1)
+    optimG = optim.Adam(modelgen.parameters(), lr=1e-4)
+    optimD = optim.Adam(modeldis.parameters(), lr=1e-4)
 
     criteon1 = nn.L1Loss()
     criteon = nn.MSELoss()
@@ -147,23 +160,28 @@ def main():
             modelgen.train()
             x, y = x.to(device), y.to(device)
             motiony = y[:,1:,:] - y[:,:-1,:]
-            motiony = nn.functional.pad(motiony, (0, 0, 0, 1)) # make it has the same dimension with y
+            # motiony = nn.functional.pad(motiony, (0, 0, 0, 1)) # make it has the same dimension with y
 
             ## dis
             set_requires_grad(modeldis, True)
+            
+            predr = modeldis(torch.cat([y, motiony], 1))
+            lossr = criteon(torch.ones_like(predr), predr)
 
-            predr = modeldis(torch.cat([y, motiony], 2))
-            lossr = disc_criterion(torch.ones_like(predr), predr)
+            # predr = modeldis(torch.cat([y, motiony], 2))
+            # lossr = disc_criterion(predr, torch.ones_like(predr))
 
             ## Generator forward
             yf = modelgen(x, y[:,:1,:])
 
             motionlogits = yf[:,1:,:] - yf[:,:-1,:]
-            motionlogits = nn.functional.pad(motionlogits, (0, 0, 0, 1)) # make it has the same dimension with y
+            # motionlogits = nn.functional.pad(motionlogits, (0, 0, 0, 1)) # make it has the same dimension with y
 
-            
-            predf = modeldis(torch.cat([yf, motionlogits], 2).detach())
-            lossf = disc_criterion(torch.zeros_like(predf), predf)
+            # predf = modeldis(torch.cat([yf, motionlogits], 2).detach())
+            # lossf = disc_criterion(predf, torch.zeros_like(predf))
+
+            predf = modeldis(torch.cat([yf, motionlogits], 1).detach())
+            lossf = criteon(torch.zeros_like(predf), predf)
 
             lossD = lossr + lossf
             optimD.zero_grad()
@@ -176,25 +194,28 @@ def main():
             loss_dict = {}
 
             ## Initial state loss
-            loss_s = 10 * (criteon1(yf[:, :1, :6], y[:, :1, :6]) + 
-                           criteon1(yf[:, :1, 6], y[:, :1, 6]) + 
-                           criteon1(yf[:, :1, 7:], y[:, :1, 7:]))
+            loss_s = 10 * (criteon1(yf[:, :1, :], y[:, :1, :]))
             
             # Expression loss
-            lossg_e = 20 * criteon(yf[:,:,7:], y[:,:,7:]) 
-            lossg_em = 200 * criteon(motionlogits[:,:,7:], motiony[:,:,7:]) # Expression motion loss
+            lossg_e = 200 * criteon(yf[:, :, :], y[:, :, :]) 
+            lossg_em = 100 * criteon(motionlogits[:, :, :], motiony[:, :, :]) # Expression motion loss
             
             ## GAN loss
-            predf2 = modeldis(torch.cat([yf, motionlogits], 2))
-            lossg_gan = disc_criterion(torch.ones_like(predf2), predf2)
+            predf2 = modeldis(torch.cat([yf, motionlogits], 1))
+            lossg_gan = 0.08 * criteon(torch.ones_like(predf2), predf2)
 
-            lossG = loss_s + lossg_e + lossg_em + 0.1*lossg_gan
+            # predf2 = modeldis(torch.cat([yf, motionlogits], 2))
+            # lossg_gan = 0.05 * disc_criterion(predf2, torch.ones_like(predf2))
+
+            lossG = loss_s + lossg_e + lossg_em + lossg_gan
 
             loss_dict["loss_s"] = loss_s
             loss_dict["lossg_e"] = lossg_e
             loss_dict["lossg_em"] = lossg_em
-            loss_dict["lossg_gan"] = 0.1*lossg_gan
+            loss_dict["lossg_gan"] = lossg_gan
             loss_dict["lossG"] = lossG
+
+            loss_dict['lossD'] = lossD
 
             save_dict2tensorboard(tb_writer, loss_dict, global_step, "train")
 
@@ -202,9 +223,10 @@ def main():
             lossG.backward()
             optimG.step()
 
-            if step % 100 == 0:
+            if global_step % 50 == 0:
                 print(f"[Epoch]: {epoch} gloabl_step: {global_step} ",
-                      f"lossG: {lossG}, loss_s: {loss_s}, lossg_e: {lossg_e}, lossg_em: {lossg_em}")
+                      f"lossG: {lossG}, loss_s: {loss_s}, lossg_e: {lossg_e}, lossg_em: {lossg_em}, lossg_gan: {lossg_gan} ",
+                      f"lossD: {lossD}")
 
         if opt.eval_npzpath is not None:
             ## ----------Start eval--------------------

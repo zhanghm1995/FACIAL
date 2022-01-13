@@ -42,7 +42,7 @@ def process_audio(ds_path, audio, fps):
 
 fps = 30                                              # frame rate, same, do not need change
 dataset_path = '../video_preprocessed/id00001'        # The root of my audios, inside is cliton, obama....
-subjects = ['gangqiang_2']     # names
+subjects = ['gangqiang_5']     # names
 ds_fname = 'ds_graph/output_graph.pb'  # deep speech model
 
 audio4deepspeech = {}
