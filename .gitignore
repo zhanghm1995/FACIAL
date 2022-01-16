@@ -7,7 +7,7 @@ examples/rendering/
 examples/test_image/
 examples/test_result/
 face_render/BFM
-video_preprocess/
+*video_preprocess*
 face2vid/datasets/
 face2vid/checkpoints/train3
 face2vid/models/spynet_models/

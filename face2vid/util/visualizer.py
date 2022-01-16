@@ -7,6 +7,7 @@ import time
 from . import util
 from . import html
 import scipy.misc
+from PIL import Image
 try:
     from StringIO import StringIO  # Python 2.7
 except ImportError:
@@ -19,8 +20,14 @@ class Visualizer():
         self.use_html = opt.isTrain and not opt.no_html
         self.win_size = opt.display_winsize
         self.name = opt.name
+        
         if self.tf_log:
-            import tensorflow as tf
+            try:
+                import tensorflow.compat.v1 as tf
+                tf.disable_v2_behavior()
+            except:
+                import tensorflow as tf
+
             self.tf = tf
             self.log_dir = os.path.join(opt.checkpoints_dir, opt.name, 'logs')
             self.writer = tf.summary.FileWriter(self.log_dir)
@@ -30,6 +37,7 @@ class Visualizer():
             self.img_dir = os.path.join(self.web_dir, 'images')
             print('create web directory %s...' % self.web_dir)
             util.mkdirs([self.web_dir, self.img_dir])
+        
         self.log_name = os.path.join(opt.checkpoints_dir, opt.name, 'loss_log.txt')
         with open(self.log_name, "a") as log_file:
             now = time.strftime("%c")
@@ -45,7 +53,9 @@ class Visualizer():
                     s = StringIO()
                 except:
                     s = BytesIO()
-                scipy.misc.toimage(image_numpy).save(s, format="jpeg")
+                
+                # scipy.misc.toimage(image_numpy).save(s, format="jpeg")
+                Image.fromarray(image_numpy).save(s, format="jpeg")
                 # Create an Image object
                 img_sum = self.tf.Summary.Image(encoded_image_string=s.getvalue(), height=image_numpy.shape[0], width=image_numpy.shape[1])
                 # Create a Summary value
