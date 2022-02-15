@@ -28,12 +28,10 @@ dataset = data_loader.load_data()
 dataset_size = len(data_loader)
 print('#test images = %d' % dataset_size)
 model = create_model(opt).cuda()
-if opt.verbose:
-    print(model)
 
 from skimage.io import imsave
 
-img_root = '../examples/test_image/'+opt.test_id_name
+img_root = '../examples/test_image/' + opt.test_id_name
 if not os.path.exists(img_root):
     os.makedirs(img_root)
 

@@ -26,7 +26,11 @@ class AlignedPairDataset(BaseDataset):
             # blink_path = '/media/cgalab/zcx/CVPR-test-video/test/test3/test3_openface/test3_512_audio.csv'
             blink_path = opt.blink_path
             blinkinfo=pd.read_csv(blink_path)
-            aublink = blinkinfo[' AU45_r'].values
+            
+            try:
+                aublink = blinkinfo[' AU45_r'].values
+            except:
+                aublink = blinkinfo['AU45_r'].values
         else:
             # blink_path = '../examples/test-result/'+opt.test_id_name+'.npz'
             blink_path = opt.blink_path
@@ -34,7 +38,7 @@ class AlignedPairDataset(BaseDataset):
             netparams = netparams['face']
 
             aublink = netparams[:,6]
-        print(aublink.shape)
+        
         self.trainaublink = aublink[:]
 
         ### instance maps
@@ -77,13 +81,13 @@ class AlignedPairDataset(BaseDataset):
 
         B_tensor = inst_tensor = feat_tensor = 0
 
-        blink = self.trainaublink[index: index + self.clip_length].copy()
-        for i in range(self.clip_length):
-            mask = A_tensor[i,1,:,:]>0.9
-            a = torch.FloatTensor([blink[i]])
-            A_tensor[i,0,mask] = a
-            A_tensor[i,1,mask] = a
-            A_tensor[i,2,mask] = a
+        # blink = self.trainaublink[index: index + self.clip_length].copy()
+        # for i in range(self.clip_length):
+        #     mask = A_tensor[i,1,:,:]>0.9
+        #     a = torch.FloatTensor([blink[i]])
+        #     A_tensor[i,0,mask] = a
+        #     A_tensor[i,1,mask] = a
+        #     A_tensor[i,2,mask] = a
 
         if self.opt.isTrain:
             B_path = self.B_paths[index: index + self.clip_length]
