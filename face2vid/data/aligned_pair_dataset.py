@@ -3,6 +3,7 @@
 import os.path
 from data.base_dataset import BaseDataset, get_params, get_transform, normalize
 from data.image_folder import make_dataset
+from data.data_utils import get_random_refer_images
 from PIL import Image
 import torch
 import pandas as pd
@@ -81,6 +82,21 @@ class AlignedPairDataset(BaseDataset):
 
         B_tensor = inst_tensor = feat_tensor = 0
 
+        ## including reference image
+        use_reference_image = True
+
+        if use_reference_image:
+            ref_img_indices = get_random_refer_images(self.B_paths, index, self.clip_length)
+            ref_imgs = [Image.open(self.B_paths[idx]).convert('RGB') for idx in ref_img_indices]
+
+            transform_ref = get_transform(self.opt, params)      
+            ref_tensor = [transform_ref(item) for item in ref_imgs]
+            ref_tensor = torch.stack(ref_tensor, dim=0)
+
+            A_tensor = torch.cat([A_tensor, ref_tensor], dim=1)
+            
+
+        ## zhanghm: if we don't want to use the eye AU blink info, we can comment below lines
         # blink = self.trainaublink[index: index + self.clip_length].copy()
         # for i in range(self.clip_length):
         #     mask = A_tensor[i,1,:,:]>0.9

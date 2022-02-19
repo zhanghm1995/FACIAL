@@ -82,7 +82,7 @@ for epoch in range(start_epoch, opt.niter + opt.niter_decay + 1):
             image = torch.squeeze(data['image'])
             # label = torch.cat((label[5], label[6]), dim=2)
             # image = torch.cat((image[5], image[6]), dim=2)
-            label = label[6]
+            label = label[6, :3, ...]
             image = image[6]
             # label = label[4]
             # image = image[4]

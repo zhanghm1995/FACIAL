@@ -43,7 +43,7 @@ class Pose2VidHDModel(BaseModel):
 
         # TODO: 20180929: Generator Input contains two images...
         netG_input_nc += opt.output_nc  # also contains the previous frame   netG_input_nc = 6
-        netG_input_nc = 30
+        netG_input_nc = 60
         # netG_input_nc = 15
         self.netG = networks.define_G(netG_input_nc, opt.output_nc, opt.ngf, opt.netG, 
                                       opt.n_downsample_global, opt.n_blocks_global, opt.n_local_enhancers, 
@@ -60,7 +60,7 @@ class Pose2VidHDModel(BaseModel):
 
             # TODO: 20180929: Generator Input contains two images...
             netD_input_nc *= 2  # two pairs of pose/frame      # 12
-            netD_input_nc = 33
+            netD_input_nc = 63
             # netD_input_nc = 18
             self.netD = networks.define_D(netD_input_nc, opt.ndf, opt.n_layers_D, opt.norm, use_sigmoid, 
                                           opt.num_D, not opt.no_ganFeat_loss, gpu_ids=self.gpu_ids)
