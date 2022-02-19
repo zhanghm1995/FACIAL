@@ -8,15 +8,13 @@ Description: Train the audio2face network with only consider facial expressions
 '''
 
 import  torch
-from torch import optim, nn, autograd
-from torch.nn.modules import loss
+from torch import optim, nn
 from torch.utils.data import DataLoader
-from model import TfaceGAN, FacialDiscriminator, NLayerDiscriminator
+from model import TfaceGAN, NLayerDiscriminator
 from dataset102 import ExpressionDataset
 import argparse
 import os, glob
 import os.path as osp
-import random, csv
 import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 
